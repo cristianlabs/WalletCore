@@ -67,5 +67,5 @@ src/main/java/br/com/User/walletcore/
 - [x] Commit 8 — Transações
 - [x] Commit 9 — Atualização automática do saldo
 - [x] Commit 10 — Validações
-- [ ] Commit 11 — Dashboard
+- [x] Commit 11 — Dashboard
 - [ ] Commit 12 — Relatórios

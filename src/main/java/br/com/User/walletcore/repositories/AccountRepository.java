@@ -18,6 +18,9 @@ public interface AccountRepository extends JpaRepository<Account, UUID> {
 
     List<Account> findAllByOwnerId(UUID ownerId);
 
+    @Query("SELECT COALESCE(SUM(a.balance), 0) FROM Account a WHERE a.owner.id = :ownerId")
+    BigDecimal sumBalanceByOwnerId(@Param("ownerId") UUID ownerId);
+
     // Atomic DB-level increment (balance = balance + delta), guarded by the same WHERE clause
     // so the negative-balance check can't be bypassed by two concurrent updates racing past a
     // separate read-then-check in Java. Returns 0 rows affected if the account doesn't exist
