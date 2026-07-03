@@ -4,13 +4,12 @@ import br.com.User.walletcore.dtos.CategoryResponse;
 import br.com.User.walletcore.dtos.CreateCategoryRequest;
 import br.com.User.walletcore.dtos.UpdateCategoryRequest;
 import br.com.User.walletcore.entities.Category;
-import br.com.User.walletcore.entities.User;
+import br.com.User.walletcore.security.AuthenticatedUser;
 import br.com.User.walletcore.services.CategoryService;
-import br.com.User.walletcore.services.UserService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,55 +27,44 @@ import java.util.UUID;
 public class CategoryController {
 
     private final CategoryService categoryService;
-    private final UserService userService;
 
-    public CategoryController(CategoryService categoryService, UserService userService) {
+    public CategoryController(CategoryService categoryService) {
         this.categoryService = categoryService;
-        this.userService = userService;
     }
 
     @PostMapping
-    public ResponseEntity<CategoryResponse> create(Authentication authentication, @Valid @RequestBody CreateCategoryRequest request) {
-        User owner = currentUser(authentication);
-        Category category = categoryService.create(owner, request);
+    public ResponseEntity<CategoryResponse> create(@AuthenticationPrincipal AuthenticatedUser principal, @Valid @RequestBody CreateCategoryRequest request) {
+        Category category = categoryService.create(principal.getUser(), request);
         return ResponseEntity.status(HttpStatus.CREATED).body(CategoryResponse.fromEntity(category));
     }
 
     @GetMapping
-    public ResponseEntity<List<CategoryResponse>> findAll(Authentication authentication) {
-        User owner = currentUser(authentication);
-        List<CategoryResponse> categories = categoryService.findAll(owner).stream()
+    public ResponseEntity<List<CategoryResponse>> findAll(@AuthenticationPrincipal AuthenticatedUser principal) {
+        List<CategoryResponse> categories = categoryService.findAll(principal.getUser()).stream()
                 .map(CategoryResponse::fromEntity)
                 .toList();
         return ResponseEntity.ok(categories);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<CategoryResponse> findById(Authentication authentication, @PathVariable UUID id) {
-        User owner = currentUser(authentication);
-        Category category = categoryService.findById(owner, id);
+    public ResponseEntity<CategoryResponse> findById(@AuthenticationPrincipal AuthenticatedUser principal, @PathVariable UUID id) {
+        Category category = categoryService.findById(principal.getUser(), id);
         return ResponseEntity.ok(CategoryResponse.fromEntity(category));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<CategoryResponse> update(
-            Authentication authentication,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             @PathVariable UUID id,
             @Valid @RequestBody UpdateCategoryRequest request
     ) {
-        User owner = currentUser(authentication);
-        Category category = categoryService.update(owner, id, request);
+        Category category = categoryService.update(principal.getUser(), id, request);
         return ResponseEntity.ok(CategoryResponse.fromEntity(category));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(Authentication authentication, @PathVariable UUID id) {
-        User owner = currentUser(authentication);
-        categoryService.delete(owner, id);
+    public ResponseEntity<Void> delete(@AuthenticationPrincipal AuthenticatedUser principal, @PathVariable UUID id) {
+        categoryService.delete(principal.getUser(), id);
         return ResponseEntity.noContent().build();
-    }
-
-    private User currentUser(Authentication authentication) {
-        return userService.findByEmail(authentication.getName());
     }
 }

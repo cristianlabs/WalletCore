@@ -43,7 +43,7 @@ docker compose up --build
 ## Estrutura do projeto
 
 ```
-src/main/java/br/com/litto/walletcore/
+src/main/java/br/com/User/walletcore/
 ├── config/
 ├── controllers/
 ├── services/
@@ -58,12 +58,12 @@ src/main/java/br/com/litto/walletcore/
 ## Roadmap
 
 - [x] Commit 1 — Inicialização
-- [ ] Commit 2 — Estrutura
-- [ ] Commit 3 — Usuários
-- [ ] Commit 4 — Migrações
-- [ ] Commit 5 — Segurança (JWT)
-- [ ] Commit 6 — Contas
-- [ ] Commit 7 — Categorias
+- [x] Commit 2 — Estrutura
+- [x] Commit 3 — Usuários
+- [x] Commit 4 — Migrações
+- [x] Commit 5 — Segurança (JWT)
+- [x] Commit 6 — Contas
+- [x] Commit 7 — Categorias
 - [ ] Commit 8 — Transações
 - [ ] Commit 9 — Atualização automática do saldo
 - [ ] Commit 10 — Validações

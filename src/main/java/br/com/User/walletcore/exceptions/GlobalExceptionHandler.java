@@ -1,5 +1,6 @@
 package br.com.User.walletcore.exceptions;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -19,6 +20,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ConflictException.class)
     public ResponseEntity<Map<String, Object>> handleConflict(ConflictException ex) {
         return errorResponse(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    // Catches the race window between an existsBy... check and the DB unique constraint
+    // (two concurrent requests can both pass the check before either commits).
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleDataIntegrityViolation() {
+        return errorResponse(HttpStatus.CONFLICT, "The request conflicts with existing data");
     }
 
     @ExceptionHandler(BadCredentialsException.class)
