@@ -1,0 +1,41 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: walletcore-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-walletcore}
+      POSTGRES_USER: ${DB_USER:-walletcore}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-walletcore}
+    ports:
+      # host 5433 by default: avoids clashing with a locally installed Postgres on 5432
+      - "${DB_PORT:-5433}:5432"
+    volumes:
+      - walletcore_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-walletcore} -d ${DB_NAME:-walletcore}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: walletcore-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-walletcore}
+      DB_USER: ${DB_USER:-walletcore}
+      DB_PASSWORD: ${DB_PASSWORD:-walletcore}
+      SERVER_PORT: ${SERVER_PORT:-8080}
+    ports:
+      - "${SERVER_PORT:-8080}:8080"
+
+volumes:
+  walletcore_db_data:
