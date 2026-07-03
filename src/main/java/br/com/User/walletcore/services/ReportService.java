@@ -51,18 +51,31 @@ public class ReportService {
         Instant yearStart = startOf(YearMonth.of(year, 1));
         Instant yearEnd = startOf(YearMonth.of(year + 1, 1));
 
-        BigDecimal totalIncome = transactionRepository.sumAmountByOwnerIdAndTypeAndPeriod(owner.getId(), TransactionType.INCOME, yearStart, yearEnd);
-        BigDecimal totalExpenses = transactionRepository.sumAmountByOwnerIdAndTypeAndPeriod(owner.getId(), TransactionType.EXPENSE, yearStart, yearEnd);
+        // One round trip for the whole year (rather than one query per month): fetch just
+        // (occurredAt, type, amount) and group by UTC month in Java, so the boundary is
+        // always UTC regardless of the DB session's timezone setting.
+        BigDecimal[] income = new BigDecimal[13];
+        BigDecimal[] expenses = new BigDecimal[13];
+        for (int i = 1; i <= 12; i++) {
+            income[i] = BigDecimal.ZERO;
+            expenses[i] = BigDecimal.ZERO;
+        }
+
+        for (var row : transactionRepository.findAmountsByOwnerIdAndPeriod(owner.getId(), yearStart, yearEnd)) {
+            int month = row.getOccurredAt().atZone(ZoneOffset.UTC).getMonthValue();
+            if (row.getType() == TransactionType.INCOME) {
+                income[month] = income[month].add(row.getAmount());
+            } else {
+                expenses[month] = expenses[month].add(row.getAmount());
+            }
+        }
 
         List<MonthSummary> months = IntStream.rangeClosed(1, 12)
-                .mapToObj(month -> {
-                    Instant from = startOf(YearMonth.of(year, month));
-                    Instant to = startOf(YearMonth.of(year, month).plusMonths(1));
-                    BigDecimal income = transactionRepository.sumAmountByOwnerIdAndTypeAndPeriod(owner.getId(), TransactionType.INCOME, from, to);
-                    BigDecimal expenses = transactionRepository.sumAmountByOwnerIdAndTypeAndPeriod(owner.getId(), TransactionType.EXPENSE, from, to);
-                    return new MonthSummary(month, income, expenses, income.subtract(expenses));
-                })
+                .mapToObj(month -> new MonthSummary(month, income[month], expenses[month], income[month].subtract(expenses[month])))
                 .toList();
+
+        BigDecimal totalIncome = months.stream().map(MonthSummary::totalIncome).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalExpenses = months.stream().map(MonthSummary::totalExpenses).reduce(BigDecimal.ZERO, BigDecimal::add);
 
         return new YearlyReportResponse(year, totalIncome, totalExpenses, totalIncome.subtract(totalExpenses), months);
     }

@@ -33,7 +33,7 @@ public class ReportController {
     @GetMapping("/monthly")
     public ResponseEntity<MonthlyReportResponse> getMonthlyReport(
             @AuthenticationPrincipal AuthenticatedUser principal,
-            @RequestParam int year,
+            @RequestParam @Min(1900) @Max(2100) int year,
             @RequestParam @Min(1) @Max(12) int month
     ) {
         return ResponseEntity.ok(reportService.getMonthlyReport(principal.getUser(), year, month));
@@ -42,7 +42,7 @@ public class ReportController {
     @GetMapping("/year")
     public ResponseEntity<YearlyReportResponse> getYearlyReport(
             @AuthenticationPrincipal AuthenticatedUser principal,
-            @RequestParam int year
+            @RequestParam @Min(1900) @Max(2100) int year
     ) {
         return ResponseEntity.ok(reportService.getYearlyReport(principal.getUser(), year));
     }

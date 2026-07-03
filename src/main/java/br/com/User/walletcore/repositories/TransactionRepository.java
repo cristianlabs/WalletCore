@@ -72,12 +72,26 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
             @Param("to") Instant to
     );
 
+    // Lightweight projection (not full Transaction entities with their Account/Category
+    // joins) for a single owner's single year of data, so the yearly report can group by
+    // month in Java (using UTC explicitly) in one round trip instead of one query per month.
+    @Query("SELECT t.occurredAt AS occurredAt, t.type AS type, t.amount AS amount FROM Transaction t WHERE t.owner.id = :ownerId AND t.occurredAt >= :from AND t.occurredAt < :to")
+    List<TransactionAmountByDate> findAmountsByOwnerIdAndPeriod(@Param("ownerId") UUID ownerId, @Param("from") Instant from, @Param("to") Instant to);
+
     interface CategoryAmountSummary {
         UUID getCategoryId();
 
         String getCategoryName();
 
         BigDecimal getTotal();
+    }
+
+    interface TransactionAmountByDate {
+        Instant getOccurredAt();
+
+        TransactionType getType();
+
+        BigDecimal getAmount();
     }
 
     interface CategoryTypeAmountSummary {
