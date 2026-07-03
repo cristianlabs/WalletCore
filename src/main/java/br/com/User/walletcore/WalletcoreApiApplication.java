@@ -1,4 +1,4 @@
-package br.com.litto.walletcore;
+package br.com.User.walletcore;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

@@ -1,4 +1,4 @@
-package br.com.litto.walletcore;
+package br.com.User.walletcore;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
