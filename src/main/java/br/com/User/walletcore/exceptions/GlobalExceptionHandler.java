@@ -1,5 +1,6 @@
 package br.com.User.walletcore.exceptions;
 
+import org.springframework.dao.ConcurrencyFailureException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,6 +30,14 @@ public class GlobalExceptionHandler {
         return errorResponse(HttpStatus.CONFLICT, "The request conflicts with existing data");
     }
 
+    // Defense-in-depth: covers deadlocks/lock-acquisition timeouts (e.g. CannotAcquireLockException,
+    // DeadlockLoserDataAccessException) that consistent lock ordering in TransactionService
+    // should prevent in the known case, but that any future write path could still hit.
+    @ExceptionHandler(ConcurrencyFailureException.class)
+    public ResponseEntity<Map<String, Object>> handleConcurrencyFailure() {
+        return errorResponse(HttpStatus.CONFLICT, "The request could not be completed due to a temporary conflict, please retry");
+    }
+
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<Map<String, Object>> handleBadCredentials() {
         return errorResponse(HttpStatus.UNAUTHORIZED, "Invalid email or password");
@@ -42,6 +51,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<Map<String, Object>> handleMalformedJson() {
         return errorResponse(HttpStatus.BAD_REQUEST, "Malformed or invalid request body");
+    }
+
+    @ExceptionHandler(CategoryTypeMismatchException.class)
+    public ResponseEntity<Map<String, Object>> handleCategoryTypeMismatch(CategoryTypeMismatchException ex) {
+        return errorResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

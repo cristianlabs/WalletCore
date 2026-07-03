@@ -7,13 +7,15 @@ import br.com.User.walletcore.entities.Category;
 import br.com.User.walletcore.entities.Transaction;
 import br.com.User.walletcore.entities.TransactionType;
 import br.com.User.walletcore.entities.User;
+import br.com.User.walletcore.exceptions.CategoryTypeMismatchException;
 import br.com.User.walletcore.repositories.TransactionRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.UUID;
 
@@ -34,6 +36,7 @@ public class TransactionService {
     public Transaction create(User owner, CreateTransactionRequest request) {
         Account account = accountService.findById(owner, request.accountId());
         Category category = categoryService.findById(owner, request.categoryId());
+        validateCategoryMatchesType(category, request.type());
 
         Transaction transaction = new Transaction();
         transaction.setOwner(owner);
@@ -50,8 +53,8 @@ public class TransactionService {
     }
 
     @Transactional(readOnly = true)
-    public List<Transaction> findAll(User owner) {
-        return transactionRepository.findAllByOwnerId(owner.getId());
+    public Page<Transaction> findAll(User owner, Pageable pageable) {
+        return transactionRepository.findAllByOwnerId(owner.getId(), pageable);
     }
 
     @Transactional(readOnly = true)
@@ -68,6 +71,7 @@ public class TransactionService {
 
         Account account = accountService.findById(owner, request.accountId());
         Category category = categoryService.findById(owner, request.categoryId());
+        validateCategoryMatchesType(category, request.type());
 
         transaction.setAccount(account);
         transaction.setCategory(category);
@@ -77,9 +81,24 @@ public class TransactionService {
         transaction.setOccurredAt(request.occurredAt() != null ? request.occurredAt() : transaction.getOccurredAt());
         Transaction saved = transactionRepository.save(transaction);
 
-        accountService.adjustBalance(previousAccountId, previousSignedAmount.negate());
-        accountService.adjustBalance(account.getId(), signedAmount(request.type(), request.amount()));
+        applyBalanceChanges(
+                previousAccountId, previousSignedAmount.negate(),
+                account.getId(), signedAmount(request.type(), request.amount())
+        );
         return saved;
+    }
+
+    // Applies both balance deltas in a consistent account-id order (rather than
+    // "old account, then new account") so two concurrent updates moving transactions
+    // between the same two accounts in opposite directions can't deadlock on row locks.
+    private void applyBalanceChanges(UUID accountIdA, BigDecimal deltaA, UUID accountIdB, BigDecimal deltaB) {
+        if (accountIdA.compareTo(accountIdB) <= 0) {
+            accountService.adjustBalance(accountIdA, deltaA);
+            accountService.adjustBalance(accountIdB, deltaB);
+        } else {
+            accountService.adjustBalance(accountIdB, deltaB);
+            accountService.adjustBalance(accountIdA, deltaA);
+        }
     }
 
     @Transactional
@@ -94,5 +113,11 @@ public class TransactionService {
 
     private BigDecimal signedAmount(TransactionType type, BigDecimal amount) {
         return type == TransactionType.EXPENSE ? amount.negate() : amount;
+    }
+
+    private void validateCategoryMatchesType(Category category, TransactionType type) {
+        if (!category.getType().name().equals(type.name())) {
+            throw new CategoryTypeMismatchException(category.getType(), type);
+        }
     }
 }

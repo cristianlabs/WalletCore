@@ -7,6 +7,10 @@ import br.com.User.walletcore.entities.Transaction;
 import br.com.User.walletcore.security.AuthenticatedUser;
 import br.com.User.walletcore.services.TransactionService;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -19,7 +23,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -39,11 +42,13 @@ public class TransactionController {
     }
 
     @GetMapping
-    public ResponseEntity<List<TransactionResponse>> findAll(@AuthenticationPrincipal AuthenticatedUser principal) {
-        List<TransactionResponse> transactions = transactionService.findAll(principal.getUser()).stream()
-                .map(TransactionResponse::fromEntity)
-                .toList();
-        return ResponseEntity.ok(transactions);
+    public ResponseEntity<Page<TransactionResponse>> findAll(
+            @AuthenticationPrincipal AuthenticatedUser principal,
+            @PageableDefault(size = 20, sort = "occurredAt", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        Page<TransactionResponse> page = transactionService.findAll(principal.getUser(), pageable)
+                .map(TransactionResponse::fromEntity);
+        return ResponseEntity.ok(page);
     }
 
     @GetMapping("/{id}")
