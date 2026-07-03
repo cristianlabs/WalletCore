@@ -8,6 +8,8 @@ import br.com.User.walletcore.repositories.AccountRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.UUID;
@@ -55,5 +57,10 @@ public class AccountService {
     public void delete(User owner, UUID id) {
         Account account = findById(owner, id);
         accountRepository.delete(account);
+    }
+
+    @Transactional
+    public void adjustBalance(UUID accountId, BigDecimal delta) {
+        accountRepository.adjustBalance(accountId, delta, Instant.now());
     }
 }

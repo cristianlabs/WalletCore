@@ -5,11 +5,13 @@ import br.com.User.walletcore.dtos.UpdateTransactionRequest;
 import br.com.User.walletcore.entities.Account;
 import br.com.User.walletcore.entities.Category;
 import br.com.User.walletcore.entities.Transaction;
+import br.com.User.walletcore.entities.TransactionType;
 import br.com.User.walletcore.entities.User;
 import br.com.User.walletcore.repositories.TransactionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -41,7 +43,10 @@ public class TransactionService {
         transaction.setAmount(request.amount());
         transaction.setDescription(request.description());
         transaction.setOccurredAt(request.occurredAt() != null ? request.occurredAt() : Instant.now());
-        return transactionRepository.save(transaction);
+        Transaction saved = transactionRepository.save(transaction);
+
+        accountService.adjustBalance(account.getId(), signedAmount(request.type(), request.amount()));
+        return saved;
     }
 
     @Transactional(readOnly = true)
@@ -58,6 +63,9 @@ public class TransactionService {
     @Transactional
     public Transaction update(User owner, UUID id, UpdateTransactionRequest request) {
         Transaction transaction = findById(owner, id);
+        UUID previousAccountId = transaction.getAccount().getId();
+        BigDecimal previousSignedAmount = signedAmount(transaction.getType(), transaction.getAmount());
+
         Account account = accountService.findById(owner, request.accountId());
         Category category = categoryService.findById(owner, request.categoryId());
 
@@ -67,12 +75,24 @@ public class TransactionService {
         transaction.setAmount(request.amount());
         transaction.setDescription(request.description());
         transaction.setOccurredAt(request.occurredAt() != null ? request.occurredAt() : transaction.getOccurredAt());
-        return transactionRepository.save(transaction);
+        Transaction saved = transactionRepository.save(transaction);
+
+        accountService.adjustBalance(previousAccountId, previousSignedAmount.negate());
+        accountService.adjustBalance(account.getId(), signedAmount(request.type(), request.amount()));
+        return saved;
     }
 
     @Transactional
     public void delete(User owner, UUID id) {
         Transaction transaction = findById(owner, id);
+        UUID accountId = transaction.getAccount().getId();
+        BigDecimal signedAmount = signedAmount(transaction.getType(), transaction.getAmount());
+
         transactionRepository.delete(transaction);
+        accountService.adjustBalance(accountId, signedAmount.negate());
+    }
+
+    private BigDecimal signedAmount(TransactionType type, BigDecimal amount) {
+        return type == TransactionType.EXPENSE ? amount.negate() : amount;
     }
 }
