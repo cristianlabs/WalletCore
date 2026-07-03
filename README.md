@@ -62,10 +62,11 @@ Authorization: Bearer <token>
 
 ## 📚 Endpoints
 
-### Autenticação (públicos)
+### Públicos
 
 | Método | Endpoint | Descrição |
 |---|---|---|
+| GET | `/` | Informações básicas da API (nome, versão) |
 | POST | `/auth/register` | Cria um novo usuário |
 | POST | `/auth/login` | Autentica e retorna o JWT |
 
@@ -177,6 +178,14 @@ docker compose up -d db
 ./mvnw spring-boot:run
 ```
 
+## 🧪 Testes
+
+Suíte de testes de integração (Testcontainers + MockMvc), cobrindo autenticação, CRUD com isolamento por usuário, atualização de saldo, validações, dashboard, relatórios e cenários de concorrência (race condition e deadlock). Requer Docker rodando:
+
+```bash
+./mvnw test
+```
+
 ## 📌 Roadmap
 
 - [x] Cadastro de usuários
@@ -187,7 +196,7 @@ docker compose up -d db
 - [x] Atualização automática de saldo
 - [x] Dashboard financeiro
 - [x] Relatórios (mensal, anual, por categoria)
-- [ ] Testes automatizados
+- [x] Testes automatizados
 - [ ] Documentação Swagger/OpenAPI
 - [ ] Deploy em ambiente cloud
 
