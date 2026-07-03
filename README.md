@@ -64,7 +64,7 @@ src/main/java/br/com/User/walletcore/
 - [x] Commit 5 — Segurança (JWT)
 - [x] Commit 6 — Contas
 - [x] Commit 7 — Categorias
-- [ ] Commit 8 — Transações
+- [x] Commit 8 — Transações
 - [ ] Commit 9 — Atualização automática do saldo
 - [ ] Commit 10 — Validações
 - [ ] Commit 11 — Dashboard
