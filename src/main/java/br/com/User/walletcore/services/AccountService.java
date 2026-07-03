@@ -4,6 +4,7 @@ import br.com.User.walletcore.dtos.CreateAccountRequest;
 import br.com.User.walletcore.dtos.UpdateAccountRequest;
 import br.com.User.walletcore.entities.Account;
 import br.com.User.walletcore.entities.User;
+import br.com.User.walletcore.exceptions.InsufficientBalanceException;
 import br.com.User.walletcore.repositories.AccountRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -61,6 +62,9 @@ public class AccountService {
 
     @Transactional
     public void adjustBalance(UUID accountId, BigDecimal delta) {
-        accountRepository.adjustBalance(accountId, delta, Instant.now());
+        int updated = accountRepository.adjustBalanceIfSufficient(accountId, delta, Instant.now());
+        if (updated == 0) {
+            throw new InsufficientBalanceException(accountId);
+        }
     }
 }

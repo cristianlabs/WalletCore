@@ -3,6 +3,7 @@ package br.com.User.walletcore.dtos;
 import br.com.User.walletcore.entities.TransactionType;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
@@ -21,6 +22,7 @@ public record CreateTransactionRequest(
         TransactionType type,
 
         @NotNull
+        @Positive
         @Digits(integer = 17, fraction = 2)
         BigDecimal amount,
 

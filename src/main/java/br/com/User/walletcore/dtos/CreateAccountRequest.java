@@ -1,6 +1,7 @@
 package br.com.User.walletcore.dtos;
 
 import br.com.User.walletcore.entities.AccountType;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -15,6 +16,7 @@ public record CreateAccountRequest(
         String name,
 
         @NotNull
+        @DecimalMin(value = "0.0", inclusive = true)
         @Digits(integer = 17, fraction = 2)
         BigDecimal balance,
 

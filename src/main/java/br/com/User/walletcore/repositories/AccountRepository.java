@@ -18,11 +18,13 @@ public interface AccountRepository extends JpaRepository<Account, UUID> {
 
     List<Account> findAllByOwnerId(UUID ownerId);
 
-    // Atomic DB-level increment (balance = balance + delta) so concurrent transactions
-    // on the same account can't lose an update by racing on a read-modify-write in Java.
-    // clearAutomatically/flushAutomatically keep the persistence context consistent when
-    // this runs alongside managed-entity saves in the same transaction (see TransactionService).
+    // Atomic DB-level increment (balance = balance + delta), guarded by the same WHERE clause
+    // so the negative-balance check can't be bypassed by two concurrent updates racing past a
+    // separate read-then-check in Java. Returns 0 rows affected if the account doesn't exist
+    // or the update would take the balance below zero.
+    // clearAutomatically/flushAutomatically keep the persistence context consistent when this
+    // runs alongside managed-entity saves in the same transaction (see TransactionService).
     @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("UPDATE Account a SET a.balance = a.balance + :delta, a.updatedAt = :updatedAt WHERE a.id = :accountId")
-    void adjustBalance(@Param("accountId") UUID accountId, @Param("delta") BigDecimal delta, @Param("updatedAt") Instant updatedAt);
+    @Query("UPDATE Account a SET a.balance = a.balance + :delta, a.updatedAt = :updatedAt WHERE a.id = :accountId AND a.balance + :delta >= 0")
+    int adjustBalanceIfSufficient(@Param("accountId") UUID accountId, @Param("delta") BigDecimal delta, @Param("updatedAt") Instant updatedAt);
 }
